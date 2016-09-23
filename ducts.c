@@ -1,3 +1,17 @@
+// ducts.c
+// version 1.1
+// Thu Sep 22 19:54:58 PDT 2016
+// https://github.com/ngokli/ducts
+//
+// Neal Gokli
+//
+// A Solution to the Quora Datacenter Cooling problem
+//
+// Problem statement: http://www.businessinsider.com/heres-the-test-you-have-to-pass-to-work-at-quora-silicon-valleys-hot-new-86-million-startup-2010-4
+// 
+// See https://github.com/ngokli/ducts for latest version (and other versions)
+
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
