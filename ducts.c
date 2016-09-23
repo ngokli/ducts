@@ -1,6 +1,6 @@
 // ducts.c
-// version 2.0
-// Thu Sep 22 19:54:58 PDT 2016
+// version 2.1
+// Fri Sep 23 00:04:54 PDT 2016
 // https://github.com/ngokli/ducts
 //
 // Neal Gokli
@@ -17,6 +17,8 @@
 // 1.1 Added this block of comments
 // 2.0 Using a 64-bit uint_64 instead of an array to store the room structure.
 //       This means width*length is limited to 64.
+// 2.1 Performance bug fix: No longer continuing to search after reaching the
+//       end room.
 
 
 #include <stdlib.h>
@@ -158,6 +160,12 @@ int search(struct position pos, uint64_t rooms, int rooms_left) {
 
   if (room_free(pos, rooms)) {
     if (0 < rooms_left) {
+      // This room is empty, so it could be the end room
+      if ((pos.w == end_room.w) && (pos.l == end_room.l)) {
+        // This is the end room, but there are still rooms left... no good!
+        return 0;
+      }
+
       // This room is empty and there are rooms left, so continue the search!
       return search2(pos, (rooms | get_bitmask(pos)), (rooms_left - 1));
     }
@@ -167,6 +175,11 @@ int search(struct position pos, uint64_t rooms, int rooms_left) {
       // No rooms left and this is the end room, so we found a solution!
       return 1;
     }
+
+    // No rooms left and this is not the end room.
+    // We should never reach here?
+    return 0;
+
   }
 
   // This is not a free room, so this is not the way!

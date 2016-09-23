@@ -4,14 +4,16 @@ This is a record of my attempts at Quora's Datacenter Cooling problem.
 I originally saw the problem on Quora's careers page.
 For reference, I found it again [here](http://www.businessinsider.com/heres-the-test-you-have-to-pass-to-work-at-quora-silicon-valleys-hot-new-86-million-startup-2010-4).
 
-# Version  history
+# Version history
 Ver | Comments
 ---:| :----
 1.0 | Initial release
 1.1 | Added this block of comments
 2.0 | Using a 64-bit `uint_64` instead of an array to store the room structure. This limits `width*length` to 64. Credit for the idea to [Pathikrit Bhowmick](https://github.com/pathikrit/Quora-Challenges/). The original problem description doesn't include any size limits, but I still feel silly for not thinking of this myself.
+2.1 | Performance bug fix: No longer continuing to search after reaching the end room.  But it turns out, this is still slower than version 1.  I had thought copying the whole room structure (as a single `uint_64`) onto the stack when recursing would help avoid data hazards in the processor.  But it seems there are much bigger bottlenecks: possibly the function calls themselves, branching, and multiplication in position calculation.  Will have to give the compiler some more help!  Perhaps handling the search in a loop instead of a recursive function call would help reduce dependencies?  Also, now that the array structure is copied at every search level, the search could easily be given to several threads.
 
 
+# How to run
 `compile.sh` compiles with `gcc -O3 -oducts ducts.c`.
 
 `test_cases/` directory contains test cases and expected results.  `inputa` and `inputb` are the small and big examples given in the original problem statement.  The other examples fall somewhere in between.
@@ -21,25 +23,26 @@ Ver | Comments
 `run_perf_test.sh` runs each test case ten times and outputs the average run time (centi-second precision).  Only counts user time, as system time is negligible (on the order of 0.01%).  Test output goes to stdout as well as the `perf_test_output` file.  You can pass a list of test cases if you don't want to run them all: `./run_perf_test.sh test_cases/input1 test_cases/input2`.  The output is ignored (not checking for correctness).
 
 
-## Performance test results:
-Skipping inputb, since there is a preformance bug causing longer runtimes.
+## Performance test results
+Skipping inputb, since it would take all day to run ten times!
+Future versions should be several orders of magnitude faster.
 ```
 $ ./run_perf_test.sh test_cases/input{a,1,2,3,4,5}
-Thu Sep 22 18:55:17 PDT 2016
+Fri Sep 23 00:11:48 PDT 2016
 test_cases/inputa avg time: 0
 test_cases/input1 avg time: 0
 test_cases/input2 avg time: 0
-test_cases/input3 avg time: .41
-test_cases/input4 avg time: 44.62
-test_cases/input5 avg time: 264.50
+test_cases/input3 avg time: .39
+test_cases/input4 avg time: 40.34
+test_cases/input5 avg time: 235.78
 ```
 
 ## Test results
-Skipping inputb, since there is a performance bug causing longer runtimes
 ```
-$ ./run_test.sh test_cases/input{a,1,2,3,4,5}
-Thu Sep 22 18:46:54 PDT 2016
+$ ./run_test.sh
+Fri Sep 23 00:07:16 PDT 2016
 test_cases/inputa: PASS!  (result matched expected: 2)
+test_cases/inputb: PASS!  (result matched expected: 301716)
 test_cases/input1: PASS!  (result matched expected: 12)
 test_cases/input2: PASS!  (result matched expected: 67)
 test_cases/input3: PASS!  (result matched expected: 375)
