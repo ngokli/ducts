@@ -1,0 +1,4 @@
+# Don't version test results, but create this directory on checkout.i
+# Ignore everything but .gitignore itself.
+*
+!.gitignore
