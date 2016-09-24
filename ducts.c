@@ -15,11 +15,13 @@
 // Version History
 // 1.0 Initial release
 // 1.1 Added this block of comments
-// 2.0 Using a 64-bit uint_64 instead of an array to store the room structure.
+// 2.0 Using a 64-bit uint64_t instead of an array to store the room structure.
 //       This means width*length is limited to 64.
 // 2.1 Performance bug fix: No longer continuing to search after reaching the
 //       end room.
-
+// 3.0 Replace position struct with a uint64_t bitmask into the room structure.
+//       Exactly one bit is set in a position bitmask at any time.
+//       Finally, something faster than version 1! But only about 25% faster.
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -29,22 +31,36 @@
 #include <stdbool.h>
 #include <errno.h>
 
-struct position {
-  short int w;
-  short int l;
-};
-
-const struct position up    = { 0, -1};
-const struct position down  = { 0,  1};
-const struct position left  = {-1,  0};
-const struct position right = { 1,  0};
-
-
+// Number of calls to search()
+uint64_t search_count = 0;
 
 // room setup
 short int width;
 short int length;
-struct position end_room;
+uint64_t  end_room;
+
+// "largest" room position
+uint64_t max_pos;
+
+
+// Bits along the corresponding edges are set in these variables
+uint64_t left_edge;
+uint64_t right_edge;
+uint64_t up_edge;
+uint64_t down_edge;
+
+
+// macros to move the position
+#define pos_left(pos)  ((pos) >> 1    )
+#define pos_right(pos) ((pos) << 1    )
+#define pos_up(pos)    ((pos) >> width)
+#define pos_down(pos)  ((pos) << width)
+
+#define search_in_direction(pos, direction, rooms, rooms_left, solution_count) \
+  if (0 == (direction ## _edge & (pos))) {                                     \
+    solution_count += search(pos_ ## direction ## (pos), rooms, rooms_left);   \
+  }
+
 
 
 void print_usage(char *basename) {
@@ -77,42 +93,23 @@ void print_verbose(char* fmt, ...) {
 
 
 
-// translate pos into bitmask for uint64_t rooms variable
-uint64_t get_bitmask(struct position pos) {
-  return (uint64_t)1 << (pos.w + (pos.l * width));
-}
-
-// translate (w,l)-coordinates to struct position
-struct position get_position(short int w, short int l) {
-  struct position pos = {w, l};
-  return pos;
-}
-
-// add corresponding coordinates of a and b
-// if b is one of the directional consts above, moves one room in b direction
-struct position move(struct position a, struct position b) {
-  struct position pos = {a.w + b.w, a.l + b.l};
-  return pos;
-}
-
 
 // check if room at pos is empty
-bool room_free(struct position pos, uint64_t rooms) {
-  return (0 == (get_bitmask(pos) & rooms));
+bool room_free(uint64_t pos, uint64_t rooms) {
+  return (0 == (pos & rooms));
 
 }
 
 // display room_array in a friendly way
 void print_rooms(uint64_t rooms) {
-  struct position pos = {0, 0};
-  while (pos.l < length) {
-    pos.w = 0;
-    while (pos.w < width) {
-      print_verbose("%d ", !room_free(pos, rooms));
-      pos.w++;
+  uint64_t pos = 1;
+  while (pos <= max_pos) {
+    print_verbose("%d ", !room_free(pos, rooms));
+
+    if (0 != (pos & right_edge)) {
+      print_verbose("\n");
     }
-    print_verbose("\n");
-    pos.l++;
+    pos <<= 1;
   }
 }
 
@@ -122,35 +119,32 @@ void print_rooms(uint64_t rooms) {
 //     continue the search.
 // search2() simply calls search() in the four directions.
 
-int search(struct position pos, uint64_t rooms, int rooms_left);
+int search(uint64_t pos, uint64_t rooms, int rooms_left);
 
-int search2(struct position pos, uint64_t rooms, int rooms_left) {
+int search2(uint64_t pos, uint64_t rooms, int rooms_left) {
     int solution_count = 0;
-    short int w = pos.w;
-    short int l = pos.l;
 
-    if (pos.w > 0) {
-      solution_count += search(move(pos, left), rooms, rooms_left);
+    if (0 == (left_edge & pos)) {
+      solution_count += search(pos_left(pos), rooms, rooms_left);
     }
 
-    if (pos.l > 0) {
-      solution_count += search(move(pos, up), rooms, rooms_left);
+    if (0 == (right_edge & pos)) {
+      solution_count += search(pos_right(pos), rooms, rooms_left);
     }
 
-    if (pos.w < (width - 1)) {
-      solution_count += search(move(pos, right), rooms, rooms_left);
+    if (0 == (up_edge & pos)) {
+      solution_count += search(pos_up(pos), rooms, rooms_left);
     }
 
-    if (pos.l < (length - 1)) {
-      solution_count += search(move(pos, down), rooms, rooms_left);
+    if (0 == (down_edge & pos)) {
+      solution_count += search(pos_down(pos), rooms, rooms_left);
     }
 
     return solution_count;
 }
 
-int search(struct position pos, uint64_t rooms, int rooms_left) {
+int search(uint64_t pos, uint64_t rooms, int rooms_left) {
   // Print some dots so we can monitor the speed
-  static uint64_t       search_count = 0;
   const static uint64_t search_count_max = 1 << 30;
   search_count++;
   if (0 == (search_count % search_count_max)) {
@@ -161,17 +155,17 @@ int search(struct position pos, uint64_t rooms, int rooms_left) {
   if (room_free(pos, rooms)) {
     if (0 < rooms_left) {
       // This room is empty, so it could be the end room
-      if ((pos.w == end_room.w) && (pos.l == end_room.l)) {
+      if (pos == end_room) {
         // This is the end room, but there are still rooms left... no good!
         return 0;
       }
 
       // This room is empty and there are rooms left, so continue the search!
-      return search2(pos, (rooms | get_bitmask(pos)), (rooms_left - 1));
+      return search2(pos, (rooms | pos), (rooms_left - 1));
     }
 
     // This room is empty, so it could be the end room
-    if ((pos.w == end_room.w) && (pos.l == end_room.l)) {
+    if (pos == end_room) {
       // No rooms left and this is the end room, so we found a solution!
       return 1;
     }
@@ -188,11 +182,11 @@ int search(struct position pos, uint64_t rooms, int rooms_left) {
 
 
 int main(int argc, char *argv[]) {
+  // Can take -q or -v as a command line argument
   if (argc > 2) {
     print_usage(argv[0]);
     exit(1);
   }
-
   if (argc == 2) {
     if (strcmp(argv[1], "-q") == 0) {
       quiet = true;
@@ -208,11 +202,9 @@ int main(int argc, char *argv[]) {
   }
 
 
-  uint64_t rooms     = 0;
-  int      num_rooms = 0;
-  struct position start_room;
-
   // Read rooms from stdin
+
+  // Get the width and length first
   errno = 0;
   if (scanf("%hd", &width) < 0 ) {
     fprintf(stderr, "Mismatch when reading width.\n");
@@ -232,43 +224,64 @@ int main(int argc, char *argv[]) {
     exit(errno);
   }
 
-  struct position pos = {0, 0};
-  while (pos.l < length) {
-    pos.w = 0;
-    while (pos.w < width) {
-      int val;
-      if (scanf("%d", &val) < 0) {
-        fprintf(stderr, "Input error: rooms[w: %d][l: %d]\n", pos.w, pos.l);
-        exit(1);
-      }
-      else if (errno != 0) {
-        perror("Error reading rooms");
-        exit(errno);
-      }
+  max_pos = (uint64_t)1 << (width * length - 1);
 
-      if (val == 0) {
-        num_rooms++;
-      }
-      else if (val == 1) {
-        rooms |= get_bitmask(pos);
-      }
-      else if (val == 2) {
-        rooms |= get_bitmask(pos);
-        start_room = pos;
-      }
-      else if (val == 3) {
-        end_room = pos;
-      }
-      pos.w++;
+  // Set left_edge, right_edge, up_edge, and down_edge.
+  //   Each of these has the corresponding bits set for its edge.
+  left_edge  = 0;
+  right_edge = 0;
+  for (int i = 0; i < length; i++) {
+    left_edge  = (left_edge  << width) + 1;
+    right_edge = (right_edge << width) + (1 << (width - 1));
+  }
+
+  up_edge   = 0;
+  down_edge = 0;
+  uint64_t down_edge_start = max_pos >> (width - 1);
+  for (int i = 0; i < width; i++) {
+    up_edge   = (up_edge << 1) + 1;
+    down_edge = (down_edge << 1) + down_edge_start;
+  }
+
+
+  // Get the actual room structure
+  uint64_t rooms     = 0;
+  int      num_rooms = 0;
+  uint64_t start_room;
+
+  uint64_t pos = 1;
+  while (pos <= max_pos) {
+    int val;
+    if (scanf("%d", &val) < 0) {
+      fprintf(stderr, "Input error: rooms[pos=%lu]\n", pos);
+      exit(1);
     }
-    pos.l++;
+    else if (errno != 0) {
+      perror("Error reading rooms");
+      exit(errno);
+    }
+
+    if (val == 0) {
+      num_rooms++;
+    }
+    else if (val == 1) {
+      rooms |= pos;
+    }
+    else if (val == 2) {
+      rooms |= pos;
+      start_room = pos;
+    }
+    else if (val == 3) {
+      end_room = pos;
+    }
+    pos <<= 1;
   }
 
 
   // Print helpful info
   print_verbose("width: %hd, length: %hd\n", width, length);
-  print_verbose("start_room: %hd, %hd\n", start_room.w, start_room.l);
-  print_verbose("end_room: %hd, %hd\n", end_room.w, end_room.l);
+  print_verbose("start_room: %lu\n", start_room);
+  print_verbose("end_room: %lu\n", end_room);
   print_rooms(rooms);
   print_verbose("rooms: %lu\n", rooms);
 
@@ -276,4 +289,6 @@ int main(int argc, char *argv[]) {
   int solution_count = search2(start_room, rooms, num_rooms);
   print_verbose("\nsolutions: ");
   print_normal("%d\n", solution_count);
+
+  print_verbose("search_count: %lu\n", search_count);
 }

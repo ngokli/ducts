@@ -9,8 +9,10 @@ Ver | Comments
 ---:| :----
 1.0 | Initial release
 1.1 | Added this block of comments
-2.0 | Using a 64-bit `uint_64` instead of an array to store the room structure. This limits `width*length` to 64. Credit for the idea to [Pathikrit Bhowmick](https://github.com/pathikrit/Quora-Challenges/). The original problem description doesn't include any size limits, but I still feel silly for not thinking of this myself.
-2.1 | Performance bug fix: No longer continuing to search after reaching the end room.  But it turns out, this is still slower than version 1.  I had thought copying the whole room structure (as a single `uint_64`) onto the stack when recursing would help avoid data hazards in the processor.  But it seems there are much bigger bottlenecks: possibly the function calls themselves, branching, and multiplication in position calculation.  Will have to give the compiler some more help!  Perhaps handling the search in a loop instead of a recursive function call would help reduce dependencies?  Also, now that the array structure is copied at every search level, the search could easily be given to several threads.
+2.0 | Using a 64-bit `uint64_t` instead of an array to store the room structure. This limits `width*length` to 64. Credit for the idea to [Pathikrit Bhowmick](https://github.com/pathikrit/Quora-Challenges/). The original problem description doesn't include any size limits, but I still feel silly for not thinking of this myself.
+2.1 | Performance bug fix: No longer continuing to search after reaching the end room.  But it turns out, this is still slower than version 1.  I had thought copying the whole room structure (as a single `uint64_t`) onto the stack when recursing would help avoid data hazards in the processor.  But it seems there are much bigger bottlenecks: possibly the function calls themselves, branching, and multiplication in position calculation.  Will have to give the compiler some more help!  Perhaps handling the search in a loop instead of a recursive function call would help reduce dependencies?  Also, now that the array structure is copied at every search level, the search could easily be given to several threads.
+3.0 | 3.0 Replace position struct with a `uint64_t` bitmask into the room structure. Exactly one bit is set in a position bitmask at any time. Finally, something faster than version 1! But only about 25% faster.
+
 
 
 # How to run
@@ -27,27 +29,25 @@ Ver | Comments
 Skipping inputb, since it would take all day to run ten times!
 Future versions should be several orders of magnitude faster.
 ```
-$ ./run_perf_test.sh test_cases/input{a,1,2,3,4,5}
-Fri Sep 23 00:11:48 PDT 2016
-test_cases/inputa avg time: 0
+$ ./run_perf_test.sh test_cases/input{1,2,3,4,5,a}Fri Sep 23 15:42:05 PDT 2016
 test_cases/input1 avg time: 0
 test_cases/input2 avg time: 0
-test_cases/input3 avg time: .39
-test_cases/input4 avg time: 40.34
-test_cases/input5 avg time: 235.78
+test_cases/input3 avg time: .16
+test_cases/input4 avg time: 18.72
+test_cases/input5 avg time: 114.33
+test_cases/inputa avg time: 0
 ```
 
 ## Test results
 ```
 $ ./run_test.sh
-Fri Sep 23 00:07:16 PDT 2016
-test_cases/inputa: PASS!  (result matched expected: 2)
-test_cases/inputb: PASS!  (result matched expected: 301716)
+Fri Sep 23 15:31:48 PDT 2016
 test_cases/input1: PASS!  (result matched expected: 12)
 test_cases/input2: PASS!  (result matched expected: 67)
 test_cases/input3: PASS!  (result matched expected: 375)
 test_cases/input4: PASS!  (result matched expected: 13842)
 test_cases/input5: PASS!  (result matched expected: 0)
+test_cases/inputa: PASS!  (result matched expected: 2)
 ```
 
 
