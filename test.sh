@@ -49,7 +49,7 @@ do
 
   if [[ $test_result -ne $expected_result ]]
   then
-    echo "$test_file: FAIL!  (expected: $expected_result)"
+    echo "$test_file: FAIL!  (expected: $expected_result, got: $test_result)"
   else
     echo "$test_file: PASS!  (result matched expected: $expected_result)"
   fi
