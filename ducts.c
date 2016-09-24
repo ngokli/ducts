@@ -22,6 +22,8 @@
 // 3.0 Replace position struct with a uint64_t bitmask into the room structure.
 //       Exactly one bit is set in a position bitmask at any time.
 //       Finally, something faster than version 1! But only about 25% faster.
+// 3.1 Simplified search2() with a (kind of complicated) macro.
+//       Performance unchanged.
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -50,16 +52,36 @@ uint64_t up_edge;
 uint64_t down_edge;
 
 
-// macros to move the position
-#define pos_left(pos)  ((pos) >> 1    )
-#define pos_right(pos) ((pos) << 1    )
-#define pos_up(pos)    ((pos) >> width)
-#define pos_down(pos)  ((pos) << width)
 
+// allows a macro to call a function after piecing together the function name
+#define call_with_param(name, param) name(param)
+
+
+// These macros move pos in the corresponding direction.
+#define pos_left(pos)  ((pos) >> 1      )
+#define pos_right(pos) ((pos) << 1      )
+#define pos_up(pos)    ((pos) >> (width))
+#define pos_down(pos)  ((pos) << (width))
+
+
+// call search() in a particular direction from the passed pos.
+//   Adds the return value of search() to solution_count.
+//
+//   This macro is meant to simplify the code in search2().
+//   An alternative is to have a helper function that takes a direction
+//   "index" between 0 and 3.  The direction macros (e.g. pos_left()) would be
+//   accessed through an array of function pointers.  The edge bitmasks would
+//   also be accessed through an array.  This may complicate things for
+//   compiler optimization.  Or not?  I should try it out.
+//
+//   This macro is also meant for me to play around with complicated macros
 #define search_in_direction(pos, direction, rooms, rooms_left, solution_count) \
-  if (0 == (direction ## _edge & (pos))) {                                     \
-    solution_count += search(pos_ ## direction ## (pos), rooms, rooms_left);   \
-  }
+  do {                                                                         \
+    if (0 == (direction ## _edge & pos)) {                                     \
+      solution_count += search(call_with_param(pos_ ## direction, pos),        \
+                               rooms, rooms_left);                             \
+    }                                                                          \
+  } while (0)
 
 
 
@@ -124,21 +146,10 @@ int search(uint64_t pos, uint64_t rooms, int rooms_left);
 int search2(uint64_t pos, uint64_t rooms, int rooms_left) {
     int solution_count = 0;
 
-    if (0 == (left_edge & pos)) {
-      solution_count += search(pos_left(pos), rooms, rooms_left);
-    }
-
-    if (0 == (right_edge & pos)) {
-      solution_count += search(pos_right(pos), rooms, rooms_left);
-    }
-
-    if (0 == (up_edge & pos)) {
-      solution_count += search(pos_up(pos), rooms, rooms_left);
-    }
-
-    if (0 == (down_edge & pos)) {
-      solution_count += search(pos_down(pos), rooms, rooms_left);
-    }
+    search_in_direction(pos, left,  rooms, rooms_left, solution_count);
+    search_in_direction(pos, right, rooms, rooms_left, solution_count);
+    search_in_direction(pos, up,    rooms, rooms_left, solution_count);
+    search_in_direction(pos, down,  rooms, rooms_left, solution_count);
 
     return solution_count;
 }
@@ -173,7 +184,6 @@ int search(uint64_t pos, uint64_t rooms, int rooms_left) {
     // No rooms left and this is not the end room.
     // We should never reach here?
     return 0;
-
   }
 
   // This is not a free room, so this is not the way!
