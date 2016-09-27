@@ -34,6 +34,12 @@
 // 4.2 Added scanf_int_safe(), a scanf wrapper to handle error checking and
 //       reporting.
 // 4.3 Added macros to replace hardcoded values.
+// 4.4 Replaced call_with_param() macro with call_with_params() macro (takes
+//       variable number of parameters).  Just to play with __VA_ARGS__ in
+//       macros ^_^.  Maybe I will use the added functionality later.
+
+
+
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -114,7 +120,7 @@ uint64_t flood_no_early_stop_count = 0;
 
 
 // Allows a macro to call a function after piecing together the function name
-#define call_with_param(name, param) name(param)
+#define call_with_params(name, ...) name(__VA_ARGS__)
 
 
 // Move pos in the corresponding direction
@@ -138,7 +144,7 @@ uint64_t flood_no_early_stop_count = 0;
 #define search_in_direction(pos, direction, rooms, rooms_left, solution_count) \
   do {                                                                         \
     if (0 == (direction ## _edge & pos)) {                                     \
-      solution_count += search(call_with_param(pos_ ## direction, pos),        \
+      solution_count += search(call_with_params(pos_ ## direction, pos),       \
                                rooms, rooms_left);                             \
     }                                                                          \
   } while (0)
@@ -147,7 +153,7 @@ uint64_t flood_no_early_stop_count = 0;
 // Like search_in_direction, but for flood_fill()
 #define flood_fill_in_direction(pos, direction, flood_rooms, flood_rooms_left) \
   do {                                                                         \
-    uint64_t next_pos = call_with_param(pos_ ## direction, pos);               \
+    uint64_t next_pos = call_with_params(pos_ ## direction, pos);              \
     if ( (0 == (direction ## _edge & pos) ) &&                                 \
          (room_free(next_pos, flood_rooms))   ) {                              \
       flood_fill(next_pos);                                                    \
