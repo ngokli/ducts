@@ -33,6 +33,7 @@
 //       diff, but rest assured there are no material changes.
 // 4.2 Added scanf_int_safe(), a scanf wrapper to handle error checking and
 //       reporting.
+// 4.3 Added macros to replace hardcoded values.
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -42,6 +43,21 @@
 #include <stdbool.h>
 #include <errno.h>
 #include <math.h>
+
+
+
+
+// *******  Constant Macros  *******
+
+// Input values
+#define EMPTY_ROOM_VAL   0
+#define EXCLUDE_ROOM_VAL 1
+#define START_ROOM_VAL   2
+#define END_ROOM_VAL     3
+
+// Threshold for printing progress dots in verbose mode
+#define SEARCHES_PER_DOT (1 << 30)
+
 
 
 
@@ -148,7 +164,7 @@ uint64_t flood_no_early_stop_count = 0;
 
 // *** I/O Methods ***
 
-// Print usage info
+// Prints usage info
 void print_usage(char *basename);
 
 // Prints unless quiet is set
@@ -169,11 +185,11 @@ int scanf_int_safe(char* error_string);
 // *** Recursive Flood-Fill Check ***
 // Checks whether all empty rooms can be reached from the current state
 
-// Decide if a flood-fill check should be done
+// Decides if a flood-fill check should be done
 bool should_flood_fill(int rooms_left);
 
 // Recursive method that fills every empty room (in flood_rooms) that can be
-//   reached from pos. Use try_flood() to initiate a flood-fill check.
+//   reached from pos. Use try_flood() to initiate this flood-fill check.
 //   Uses flood_rooms and flood_rooms_left global variables.
 void flood_fill(uint64_t pos);
 
@@ -294,9 +310,8 @@ bool try_flood(uint64_t pos, uint64_t rooms, int rooms_left) {
 
 int search(uint64_t pos, uint64_t rooms, int rooms_left) {
   // Print some dots so we can monitor the speed
-  const static uint64_t search_count_max = 1 << 30;
   search_count++;
-  if (0 == (search_count % search_count_max)) {
+  if (0 == (search_count % SEARCHES_PER_DOT)) {
     print_verbose(".");
     fflush(NULL);
   }
@@ -362,7 +377,7 @@ bool room_free(uint64_t pos, uint64_t rooms) {
 
 
 // *******  Main()  *******
-int main(int argc, char *argv[]) {
+void main(int argc, char *argv[]) {
   // Can take -q or -v as a command line argument
   if (argc > 2) {
     print_usage(argv[0]);
@@ -420,17 +435,17 @@ int main(int argc, char *argv[]) {
     char input_info[32];
     snprintf(input_info, sizeof(input_info), "rooms[pos=%lu]\n", pos);
     val = scanf_int_safe(input_info);
-    if (val == 0) {
+    if (val == EMPTY_ROOM_VAL) {
       num_rooms++;
     }
-    else if (val == 1) {
+    else if (val == EXCLUDE_ROOM_VAL) {
       rooms |= pos;
     }
-    else if (val == 2) {
+    else if (val == START_ROOM_VAL) {
       rooms |= pos;
       start_room = pos;
     }
-    else if (val == 3) {
+    else if (val == END_ROOM_VAL) {
       end_room = pos;
     }
     pos <<= 1;

@@ -16,7 +16,7 @@ Ver | Comments
 4.0 | Added periodic checking for empty rooms that are cut off, using a recursive flood-fill algorithm. The flood-fill is *much* less expensive than the path search, so avoiding some large dead-end branches gives a huge performance gain. This is another idea from [Pathikrit Bhowmick](https://github.com/pathikrit/Quora-Challenges/). I added a heuristic based on datacenter size to determine how early to start using these flood-fills.
 4.1 | Added forward declarations, moved functions and global variable definitions, and fixed up comments/formatting.  Sorry for the messy diff, but rest assured there are no material changes.
 4.2 | Added `scanf_int_safe()`, a scanf wrapper to handle error checking and reporting.
-
+4.3 | Added macros to replace hardcoded values.
 
 
 
