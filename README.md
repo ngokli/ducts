@@ -13,6 +13,7 @@ Ver | Comments
 2.1 | Performance bug fix: No longer continuing to search after reaching the end room.  But it turns out, this is still slower than version 1.  I had thought copying the whole room structure (as a single `uint64_t`) onto the stack when recursing would help avoid data hazards in the processor.  But it seems there are much bigger bottlenecks: possibly the function calls themselves, branching, and multiplication in position calculation.  Will have to give the compiler some more help!  Perhaps handling the search in a loop instead of a recursive function call would help reduce dependencies?  Also, now that the array structure is copied at every search level, the search could easily be given to several threads.
 3.0 | 3.0 Replace position struct with a `uint64_t` bitmask into the room structure. Exactly one bit is set in a position bitmask at any time. Finally, something faster than version 1! But only about 25% faster.
 3.1 | Simplified search2() with a (kind of complicated) macro. Performance unchanged. This let me play with macros, but it would be interesting to do the same thing with a helper function and some indirection. I wonder how much the compiler could optimize it away.
+4.0 | Added periodic checking for empty rooms that are cut off, using a recursive flood-fill algorithm. The flood-fill is *much* less expensive than the path search, so avoiding some large dead-end branches gives a huge performance gain. This is another idea from [Pathikrit Bhowmick](https://github.com/pathikrit/Quora-Challenges/). I added a heuristic based on datacenter size to determine how early to start using these flood-fills.
 
 
 
@@ -27,28 +28,29 @@ Ver | Comments
 
 
 ## Performance test results
-Skipping inputb, since it would take all day to run ten times!
-Future versions should be several orders of magnitude faster.
 ```
-$ ./run_perf_test.sh test_cases/input{1,2,3,4,5,a}Fri Sep 23 15:42:05 PDT 2016
+$ ./run_perf_test.sh 
+Mon Sep 26 15:31:37 PDT 2016
 test_cases/input1 avg time: 0
 test_cases/input2 avg time: 0
-test_cases/input3 avg time: .16
-test_cases/input4 avg time: 18.72
-test_cases/input5 avg time: 114.33
+test_cases/input3 avg time: .05
+test_cases/input4 avg time: 1.90
+test_cases/input5 avg time: 9.77
 test_cases/inputa avg time: 0
+test_cases/inputb avg time: 89.28
 ```
 
 ## Test results
 ```
-$ ./run_test.sh
-Fri Sep 23 15:31:48 PDT 2016
+$ ./run_test.sh 
+Mon Sep 26 15:28:59 PDT 2016
 test_cases/input1: PASS!  (result matched expected: 12)
 test_cases/input2: PASS!  (result matched expected: 67)
 test_cases/input3: PASS!  (result matched expected: 375)
 test_cases/input4: PASS!  (result matched expected: 13842)
 test_cases/input5: PASS!  (result matched expected: 0)
 test_cases/inputa: PASS!  (result matched expected: 2)
+test_cases/inputb: PASS!  (result matched expected: 301716)
 ```
 
 
