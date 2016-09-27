@@ -37,7 +37,7 @@
 // 4.4 Replaced call_with_param() macro with call_with_params() macro (takes
 //       variable number of parameters).  Just to play with __VA_ARGS__ in
 //       macros ^_^.  Maybe I will use the added functionality later.
-
+// 4.5 Added some methods to handle input, setup, and debug output.
 
 
 
@@ -76,8 +76,10 @@ bool verbose = false; // From command line -v
 
 
 // ** room setup **
-int width;
-int length;
+int       width;
+int       length;
+int       num_rooms = 0;
+uint64_t  start_room;
 uint64_t  end_room;
 
 
@@ -173,6 +175,12 @@ uint64_t flood_no_early_stop_count = 0;
 // Prints usage info
 void print_usage(char *basename);
 
+// Read and handle command-line arguments
+void handle_cli_args(int argc, char* argv[]);
+
+// Read and handle datacenter rooms map input
+uint64_t handle_datacenter_input();
+
 // Prints unless quiet is set
 void print_normal(char* fmt, ...);
 
@@ -182,6 +190,9 @@ void print_verbose(char* fmt, ...);
 // Prints rooms in a friendly way
 void print_rooms(uint64_t rooms);
 
+// Prints rooms and other helpful debug info
+void print_rooms_setup(uint64_t rooms);
+
 // Wraps scanf("%d", &var) in some error checking and reporting code.
 //   error_string is used for context in error messages.
 //   Returns the int value read from stdin
@@ -190,6 +201,11 @@ int scanf_int_safe(char* error_string);
 
 // *** Recursive Flood-Fill Check ***
 // Checks whether all empty rooms can be reached from the current state
+
+// Sets flood_rooms_left_threshold.  Flood-fill checks are only performed when
+//   rooms_left is below this value.
+//   Uses global variables to determine the value called.
+void set_flood_fill_threshold();
 
 // Decides if a flood-fill check should be done
 bool should_flood_fill(int rooms_left);
@@ -228,6 +244,9 @@ int search2(uint64_t pos, uint64_t rooms, int rooms_left);
 //   Returns true if empty
 bool room_free(uint64_t pos, uint64_t rooms);
 
+// Set edges (left_edge, etc.) based on height and width
+void set_edges();
+
 
 
 
@@ -235,6 +254,64 @@ bool room_free(uint64_t pos, uint64_t rooms);
 
 void print_usage(char *basename) {
   fprintf(stderr, "Usage: %s [-q]\n", basename);
+}
+
+void handle_cli_args(int argc, char* argv[]) {
+  // Can take -q or -v as a command line argument
+  if (argc > 2) {
+    print_usage(argv[0]);
+    exit(1);
+  }
+  if (argc == 2) {
+    if (strcmp(argv[1], "-q") == 0) {
+      quiet = true;
+    }
+    else if(strcmp(argv[1], "-v") == 0) {
+      verbose = true;
+    }
+    else {
+      print_usage(argv[0]);
+      exit(1);
+    }
+  }
+}
+
+uint64_t handle_datacenter_input() {
+  // Get the width and length first
+  width  = scanf_int_safe("width");
+  length = scanf_int_safe("length");
+
+  max_pos = (uint64_t)1 << (width * length - 1);
+
+  set_edges();
+
+  // Get the actual room structure
+  uint64_t rooms = 0;
+  uint64_t pos   = 1;
+  while (pos <= max_pos) {
+    int val;
+    char input_info[32];
+    snprintf(input_info, sizeof(input_info), "rooms[pos=%lu]\n", pos);
+    val = scanf_int_safe(input_info);
+    if (val == EMPTY_ROOM_VAL) {
+      num_rooms++;
+    }
+    else if (val == EXCLUDE_ROOM_VAL) {
+      rooms |= pos;
+    }
+    else if (val == START_ROOM_VAL) {
+      rooms |= pos;
+      start_room = pos;
+    }
+    else if (val == END_ROOM_VAL) {
+      end_room = pos;
+    }
+    pos <<= 1;
+  }
+
+  set_flood_fill_threshold();
+
+  return rooms;
 }
 
 void print_normal(char* fmt, ...) {
@@ -267,6 +344,16 @@ void print_rooms(uint64_t rooms) {
   }
 }
 
+void print_rooms_setup(uint64_t rooms) {
+  // Print helpful info
+  print_verbose("width: %hd, length: %hd\n", width, length);
+  print_verbose("start_room: %lu\n", start_room);
+  print_verbose("end_room: %lu\n", end_room);
+  print_rooms(rooms);
+  print_verbose("num_rooms: %d\n", num_rooms);
+  print_verbose("flood_rooms_left_threshold: %d\n", flood_rooms_left_threshold);
+}
+
 int scanf_int_safe(char* error_string) {
   errno = 0;
   int val;
@@ -282,7 +369,27 @@ int scanf_int_safe(char* error_string) {
 }
 
 
+
 // *******  Recursive Flood-Fill  *******
+
+void set_flood_fill_threshold() {
+  // First attempt at a heuristic for a flood threshold
+  // Flood-filling at the very begining of a search makes no sense, because it
+  // is unlikely for the first few ducts to create a "bubble".
+  // flood_rooms_left_threshold is used by should_flood_fill() to decide when
+  // to start flood-filling.
+  flood_rooms_left_threshold = num_rooms -
+                                 (1.5 * sqrt((double)num_rooms) + 1);
+
+  // I need to play around with threshold formulas a bit more, and try them
+  // with more varied and complex datacenters.
+
+  // Here's another attempt which seems to change the runtimes slightly (both
+  // up and down: need to test more).  Since the runtimes don't change much,
+  // I think these are close to optimal for test cases being used.
+  // int min_dim = (width > length) ? length : width;
+  // flood_rooms_left_threshold = num_rooms - min_dim - 2;
+}
 
 bool should_flood_fill(int rooms_left) {
   return ( ( 0 == (rooms_left % 4) ) &&
@@ -330,7 +437,6 @@ int search(uint64_t pos, uint64_t rooms, int rooms_left) {
         return 0;
       }
 
-
       if (should_flood_fill(rooms_left)) {
         // Try flood-filling (check if the end room is reachable from pos)
         if (!try_flood(pos, rooms, rooms_left)) {
@@ -375,45 +481,16 @@ int search2(uint64_t pos, uint64_t rooms, int rooms_left) {
 
 
 // *******  Other Helper Methods  *******
-// check if room at pos is empty
+
 bool room_free(uint64_t pos, uint64_t rooms) {
   return (0 == (pos & rooms));
 }
 
 
+void set_edges() {
+  // Each of these edges has the corresponding bits set for its edge.
 
-// *******  Main()  *******
-void main(int argc, char *argv[]) {
-  // Can take -q or -v as a command line argument
-  if (argc > 2) {
-    print_usage(argv[0]);
-    exit(1);
-  }
-  if (argc == 2) {
-    if (strcmp(argv[1], "-q") == 0) {
-      quiet = true;
-    }
-    else if(strcmp(argv[1], "-v") == 0) {
-      verbose = true;
-    }
-    else {
-      print_usage(argv[0]);
-      exit(1);
-    }
-  }
-
-
-  // Read rooms from stdin
-
-  // Get the width and length first
-  width  = scanf_int_safe("width");
-  length = scanf_int_safe("length");
-
-  max_pos = (uint64_t)1 << (width * length - 1);
-
-
-  // Set left_edge, right_edge, up_edge, and down_edge.
-  //   Each of these has the corresponding bits set for its edge.
+  // Set left_edge and right_edge
   left_edge  = 0;
   right_edge = 0;
   for (int i = 0; i < length; i++) {
@@ -421,6 +498,7 @@ void main(int argc, char *argv[]) {
     right_edge = (right_edge << width) + (1 << (width - 1));
   }
 
+  // Set up_edge and down_edge
   up_edge   = 0;
   down_edge = 0;
   uint64_t down_edge_start = max_pos >> (width - 1);
@@ -428,49 +506,19 @@ void main(int argc, char *argv[]) {
     up_edge   = (up_edge << 1) + 1;
     down_edge = (down_edge << 1) + down_edge_start;
   }
+}
 
 
-  // Get the actual room structure
-  uint64_t rooms     = 0;
-  int      num_rooms = 0;
-  uint64_t start_room;
-
-  uint64_t pos = 1;
-  while (pos <= max_pos) {
-    int val;
-    char input_info[32];
-    snprintf(input_info, sizeof(input_info), "rooms[pos=%lu]\n", pos);
-    val = scanf_int_safe(input_info);
-    if (val == EMPTY_ROOM_VAL) {
-      num_rooms++;
-    }
-    else if (val == EXCLUDE_ROOM_VAL) {
-      rooms |= pos;
-    }
-    else if (val == START_ROOM_VAL) {
-      rooms |= pos;
-      start_room = pos;
-    }
-    else if (val == END_ROOM_VAL) {
-      end_room = pos;
-    }
-    pos <<= 1;
-  }
 
 
-  // First attempt at a heuristic for a flood threshold
-  // Flooding at the very begining of a search makes no sense, because it
-  // is unlikely for the first few ducts to create a "bubble".
-  flood_rooms_left_threshold = num_rooms -
-                                 (1.5 * sqrt((double)num_rooms) + 1);
+// *******  Main()  *******
+void main(int argc, char *argv[]) {
+  handle_cli_args(argc, argv);
 
+  uint64_t rooms;
+  rooms = handle_datacenter_input();
 
-  // Print helpful info
-  print_verbose("width: %hd, length: %hd\n", width, length);
-  print_verbose("start_room: %lu\n", start_room);
-  print_verbose("end_room: %lu\n", end_room);
-  print_rooms(rooms);
-  print_verbose("rooms: %lu\n", rooms);
+  print_rooms_setup(rooms);
 
   // Search!
   int solution_count = search2(start_room, rooms, num_rooms);

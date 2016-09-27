@@ -18,6 +18,7 @@ Ver | Comments
 4.2 | Added `scanf_int_safe()`, a scanf wrapper to handle error checking and reporting.
 4.3 | Added macros to replace hardcoded values.
 4.4 Replaced `call_with_param()` macro with `call_with_params()` macro (takes variable number of parameters).  Just to play with `__VA_ARGS__` in macros `^_^`.  Maybe I will use the added functionality later.
+4.5 | Added some methods to handle input, setup, and debug output.
 
 
 
