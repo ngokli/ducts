@@ -28,6 +28,9 @@
 //       recursive flood-fill algorithm. The flood-fill is *much* less expensive
 //       than the path search, so avoiding some large dead-end branches gives a
 //       huge performance gain.
+// 4.1 Added forward declarations, moved functions and global variable
+//       definitions, and fixed up comments/formatting.  Sorry for the messy
+//       diff, but rest assured there are no material changes.
 
 
 #include <stdlib.h>
@@ -40,23 +43,27 @@
 #include <math.h>
 
 
-// Number of calls to search()
-uint64_t search_count = 0;
 
-// Number of times flood filling allows the search to stop early (or not)
-uint64_t flood_early_stop_count    = 0;
-uint64_t flood_no_early_stop_count = 0;
+// *******  Global Variables  *******
+
+// *** Output Verbosity ***
+bool quiet   = false; // From command line -q
+bool verbose = false; // From command line -v
 
 
-// room setup
+
+// *** room setup ***
 short int width;
 short int length;
 uint64_t  end_room;
 
+
+
+// *** Bitmasks ***
+// For manipulating rooms and position
+
 // "largest" room position
 uint64_t max_pos;
-
-
 
 // Bits along the corresponding edges are set in these variables
 uint64_t left_edge;
@@ -65,18 +72,35 @@ uint64_t up_edge;
 uint64_t down_edge;
 
 
-// For Flood filling
+
+// *** Flood-Fill Check ***
 // Global variables to avoid passing
 int      flood_rooms_left;
 int      flood_rooms_left_threshold;
 uint64_t flood_rooms;
 
 
-// allows a macro to call a function after piecing together the function name
+
+// *** Stats ***
+
+// Number of calls to search()
+uint64_t search_count = 0;
+
+// Number of times flood-filling check allows the search to stop early (or not)
+uint64_t flood_early_stop_count    = 0;
+uint64_t flood_no_early_stop_count = 0;
+
+
+
+
+// *******  Macros  *******
+
+
+// Allows a macro to call a function after piecing together the function name
 #define call_with_param(name, param) name(param)
 
 
-// These macros move pos in the corresponding direction.
+// Move pos in the corresponding direction
 #define pos_left(pos)  ((pos) >> 1      )
 #define pos_right(pos) ((pos) << 1      )
 #define pos_up(pos)    ((pos) >> (width))
@@ -93,7 +117,7 @@ uint64_t flood_rooms;
 //   also be accessed through an array.  This may complicate things for
 //   compiler optimization.  Or not?  I should try it out.
 //
-//   This macro is also meant for me to play around with complicated macros
+//   This is also meant for me to get to play around with complicated macros
 #define search_in_direction(pos, direction, rooms, rooms_left, solution_count) \
   do {                                                                         \
     if (0 == (direction ## _edge & pos)) {                                     \
@@ -103,7 +127,7 @@ uint64_t flood_rooms;
   } while (0)
 
 
-// Like search_in_direction, but for flood filling
+// Like search_in_direction, but for flood_fill()
 #define flood_fill_in_direction(pos, direction, flood_rooms, flood_rooms_left) \
   do {                                                                         \
     uint64_t next_pos = call_with_param(pos_ ## direction, pos);               \
@@ -118,17 +142,74 @@ uint64_t flood_rooms;
 
 
 
+// *******  Forward Declarations  *******
+
+
+// *** I/O Methods ***
 
 // Print usage info
+void print_usage(char *basename);
+
+// Prints unless quiet is set
+void print_normal(char* fmt, ...);
+
+// Prints only if verbose is set
+void print_verbose(char* fmt, ...);
+
+// Prints rooms in a friendly way
+void print_rooms(uint64_t rooms);
+
+
+
+// *** Recursive Flood-Fill Check ***
+// Checks whether all empty rooms can be reached from the current state
+
+// Decide if a flood-fill check should be done
+bool should_flood_fill(int rooms_left);
+
+// Recursive method that fills every empty room (in flood_rooms) that can be
+//   reached from pos. Use try_flood() to initiate a flood-fill check.
+//   Uses flood_rooms and flood_rooms_left global variables.
+void flood_fill(uint64_t pos);
+
+// Do a flood-fill check.
+//   Checks if all empty rooms can be reached from the current state.
+//   Returns true iff it is possible.
+//   If try_flood returns false, the current search branch should be abandoned.
+bool try_flood(uint64_t pos, uint64_t rooms, int rooms_left);
+
+
+
+// *** Recursive Path Search ***
+// The core functionality
+
+// search() checks if the current state is a solution or a possible dead end.
+//   Otherwise, it calls search2() to continue the search.
+//   Returns the number of solutions (paths) found.
+//   Increments global variable search_count each time search() is called.
+int search(uint64_t pos, uint64_t rooms, int rooms_left);
+
+// search2() simply calls search() in the four directions, avoiding wrapping
+//   over edges.
+int search2(uint64_t pos, uint64_t rooms, int rooms_left);
+
+
+
+// *** Other helper methods ***
+
+// Checks if room at pos is empty
+//   Returns true if empty
+bool room_free(uint64_t pos, uint64_t rooms);
+
+
+
+
+// *******  I/O methods  *******
+
 void print_usage(char *basename) {
   fprintf(stderr, "Usage: %s [-q]\n", basename);
 }
 
-// Control verbosity from command line
-bool quiet   = false; // From command line -q
-bool verbose = false; // From command line -v
-
-// Prints unless quiet is set
 void print_normal(char* fmt, ...) {
   if (!quiet) {
     va_list args;
@@ -138,7 +219,6 @@ void print_normal(char* fmt, ...) {
   }
 }
 
-// Prints only if verbose is set
 void print_verbose(char* fmt, ...) {
   if (verbose) {
     va_list args;
@@ -148,16 +228,6 @@ void print_verbose(char* fmt, ...) {
   }
 }
 
-
-
-
-// check if room at pos is empty
-bool room_free(uint64_t pos, uint64_t rooms) {
-  return (0 == (pos & rooms));
-
-}
-
-// display rooms in a friendly way
 void print_rooms(uint64_t rooms) {
   uint64_t pos = 1;
   while (pos <= max_pos) {
@@ -171,16 +241,13 @@ void print_rooms(uint64_t rooms) {
 }
 
 
+// *******  Recursive Flood-Fill  *******
 
-// Define if a flood fill should be done
 bool should_flood_fill(int rooms_left) {
   return ( ( 0 == (rooms_left % 4) ) &&
            ( flood_rooms_left_threshold > rooms_left) );
 }
 
-
-// Fill every empty room (in flood_rooms) that can be reached from pos.
-//   Uses flood_rooms and flood_rooms_left global variables.
 void flood_fill(uint64_t pos) {
   flood_rooms_left--;
   if (flood_rooms_left == 0) {
@@ -195,9 +262,6 @@ void flood_fill(uint64_t pos) {
   flood_fill_in_direction(pos, down,  flood_rooms, flood_rooms_left);
 }
 
-// Check if all empty rooms can be reached from the current state.
-// Returns true iff it is possible.
-// If try_flood returns false, the current search branch should be abandoned.
 bool try_flood(uint64_t pos, uint64_t rooms, int rooms_left) {
   flood_rooms      = rooms;
   flood_rooms_left = rooms_left;
@@ -207,26 +271,7 @@ bool try_flood(uint64_t pos, uint64_t rooms, int rooms_left) {
 
 
 
-// search() and search2() recursive methods to do the path search
-// search() checks if the current state is a solution or a possible dead end.
-//   Otherwise, it calls search2() to continue the search.
-//   Returns the number of solutions (paths) found.
-//   Increments global variables search_count each time search() is called.
-// search2() simply calls search() in the four directions, avoiding wrapping
-//   over edges.
-
-int search(uint64_t pos, uint64_t rooms, int rooms_left);
-
-int search2(uint64_t pos, uint64_t rooms, int rooms_left) {
-    int solution_count = 0;
-
-    search_in_direction(pos, left,  rooms, rooms_left, solution_count);
-    search_in_direction(pos, right, rooms, rooms_left, solution_count);
-    search_in_direction(pos, up,    rooms, rooms_left, solution_count);
-    search_in_direction(pos, down,  rooms, rooms_left, solution_count);
-
-    return solution_count;
-}
+// *******  Recursive Path Search  *******
 
 int search(uint64_t pos, uint64_t rooms, int rooms_left) {
   // Print some dots so we can monitor the speed
@@ -247,7 +292,7 @@ int search(uint64_t pos, uint64_t rooms, int rooms_left) {
 
 
       if (should_flood_fill(rooms_left)) {
-        // Try flood filling (check if the end room is reachable from pos)
+        // Try flood-filling (check if the end room is reachable from pos)
         if (!try_flood(pos, rooms, rooms_left)) {
           flood_early_stop_count++;
           return 0;
@@ -276,9 +321,28 @@ int search(uint64_t pos, uint64_t rooms, int rooms_left) {
   return 0;
 }
 
+int search2(uint64_t pos, uint64_t rooms, int rooms_left) {
+    int solution_count = 0;
+
+    search_in_direction(pos, left,  rooms, rooms_left, solution_count);
+    search_in_direction(pos, right, rooms, rooms_left, solution_count);
+    search_in_direction(pos, up,    rooms, rooms_left, solution_count);
+    search_in_direction(pos, down,  rooms, rooms_left, solution_count);
+
+    return solution_count;
+}
 
 
 
+// *******  Other Helper Methods  *******
+// check if room at pos is empty
+bool room_free(uint64_t pos, uint64_t rooms) {
+  return (0 == (pos & rooms));
+}
+
+
+
+// *******  Main()  *******
 int main(int argc, char *argv[]) {
   // Can take -q or -v as a command line argument
   if (argc > 2) {
