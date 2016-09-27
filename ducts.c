@@ -31,7 +31,8 @@
 // 4.1 Added forward declarations, moved functions and global variable
 //       definitions, and fixed up comments/formatting.  Sorry for the messy
 //       diff, but rest assured there are no material changes.
-
+// 4.2 Added scanf_int_safe(), a scanf wrapper to handle error checking and
+//       reporting.
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -52,9 +53,9 @@ bool verbose = false; // From command line -v
 
 
 
-// *** room setup ***
-short int width;
-short int length;
+// ** room setup **
+int width;
+int length;
 uint64_t  end_room;
 
 
@@ -159,6 +160,10 @@ void print_verbose(char* fmt, ...);
 // Prints rooms in a friendly way
 void print_rooms(uint64_t rooms);
 
+// Wraps scanf("%d", &var) in some error checking and reporting code.
+//   error_string is used for context in error messages.
+//   Returns the int value read from stdin
+int scanf_int_safe(char* error_string);
 
 
 // *** Recursive Flood-Fill Check ***
@@ -238,6 +243,20 @@ void print_rooms(uint64_t rooms) {
     }
     pos <<= 1;
   }
+}
+
+int scanf_int_safe(char* error_string) {
+  errno = 0;
+  int val;
+  if (scanf("%d", &val) <= 0 ) {
+    fprintf(stderr, "Mismatch when reading %s.\n", error_string);
+    exit(1);
+  }
+  else if (errno != 0) {
+    fprintf(stderr, "Error reading %s: %s\n", error_string, strerror(errno));
+    exit(errno);
+  }
+  return val;
 }
 
 
@@ -366,24 +385,8 @@ int main(int argc, char *argv[]) {
   // Read rooms from stdin
 
   // Get the width and length first
-  errno = 0;
-  if (scanf("%hd", &width) < 0 ) {
-    fprintf(stderr, "Mismatch when reading width.\n");
-    exit(1);
-  }
-  else if (errno != 0) {
-    perror("Error reading width");
-    exit(errno);
-  }
-
-  if (scanf("%hd", &length) < 0) {
-    fprintf(stderr, "Mismatch when reading length.\n");
-    exit(1);
-  }
-  else if (errno != 0) {
-    perror("Error reading length");
-    exit(errno);
-  }
+  width  = scanf_int_safe("width");
+  length = scanf_int_safe("length");
 
   max_pos = (uint64_t)1 << (width * length - 1);
 
@@ -414,15 +417,9 @@ int main(int argc, char *argv[]) {
   uint64_t pos = 1;
   while (pos <= max_pos) {
     int val;
-    if (scanf("%d", &val) < 0) {
-      fprintf(stderr, "Input error: rooms[pos=%lu]\n", pos);
-      exit(1);
-    }
-    else if (errno != 0) {
-      perror("Error reading rooms");
-      exit(errno);
-    }
-
+    char input_info[32];
+    snprintf(input_info, sizeof(input_info), "rooms[pos=%lu]\n", pos);
+    val = scanf_int_safe(input_info);
     if (val == 0) {
       num_rooms++;
     }
