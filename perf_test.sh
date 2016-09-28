@@ -7,7 +7,7 @@ echo "`date`"
 
 if [ $# -eq 0 ]
 then
-  test_files="$(ls test_cases/input* | sort)"
+  test_files="$(ls test_cases/input* | sort -V)"
 else
   test_files="$@"
 fi
