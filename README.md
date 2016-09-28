@@ -47,32 +47,42 @@ using `run_perf_test.sh` (which runs ten times, which would take forever).
 | 2.1 |       0.39 |  40.34 | 235.78 | \*8137.41 | Performance bug fix
 | 3.0 |       0.16 |  18.72 | 114.33 | \*3952.12 | Replace position with 64-bit variable
 | 4.0 |       0.05 |   1.90 |   9.77 |     89.28 | Flood-fill check... Bam!
-| 4.6 |       0.02 |   0.91 |   3.53 |     33.10 | Fixed flood-fill bug
+| 4.6 |       0.02 |   0.89 |   3.67 |     32.82 | Fixed flood-fill bug
 
 
 ## Performance test results
 ```
-$ ./run_perf_test.sh test_cases/input?
-Wed Sep 28 13:04:58 PDT 2016
+$ ./run_perf_test.sh
+Wed Sep 28 13:53:08 PDT 2016
 test_cases/input1 avg time: 0
 test_cases/input2 avg time: 0
 test_cases/input3 avg time: .02
-test_cases/input4 avg time: .91
-test_cases/input5 avg time: 3.53
+test_cases/input4 avg time: .89
+test_cases/input5 avg time: 3.67
+test_cases/input10 avg time: 2.76
+test_cases/input11 avg time: 1.91
+test_cases/input12 avg time: 4.66
+test_cases/input13 avg time: 5.34
+test_cases/input15 avg time: .71
 test_cases/inputa avg time: 0
-test_cases/inputb avg time: 33.10
+test_cases/inputb avg time: 32.82
 ```
 
 
 ## Test results
 ```
-$ ./run_test.sh 
-Mon Sep 26 15:28:59 PDT 2016
+$ ./run_test.sh
+Wed Sep 28 13:49:02 PDT 2016
 test_cases/input1: PASS!  (result matched expected: 12)
 test_cases/input2: PASS!  (result matched expected: 67)
 test_cases/input3: PASS!  (result matched expected: 375)
 test_cases/input4: PASS!  (result matched expected: 13842)
 test_cases/input5: PASS!  (result matched expected: 0)
+test_cases/input10: PASS!  (result matched expected: 33380)
+test_cases/input11: PASS!  (result matched expected: 12705)
+test_cases/input12: PASS!  (result matched expected: 63318)
+test_cases/input13: PASS!  (result matched expected: 32735)
+test_cases/input15: PASS!  (result matched expected: 655)
 test_cases/inputa: PASS!  (result matched expected: 2)
 test_cases/inputb: PASS!  (result matched expected: 301716)
 ```
