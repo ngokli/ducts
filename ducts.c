@@ -42,6 +42,7 @@
 //       when exactly one room is cut off. This does not affect the results, but
 //       fixing it gives a huge performance boost.
 // 4.7 Fixed error message formatting.
+// 4.8 Bugfix: Now works for 8x8 datacenters
 
 
 #include <stdlib.h>
@@ -292,7 +293,7 @@ uint64_t handle_datacenter_input() {
   // Get the actual room structure
   uint64_t rooms = 0;
   uint64_t pos   = 1;
-  while (pos <= max_pos) {
+  do {
     int val;
     char input_info[32];
     snprintf(input_info, sizeof(input_info), "rooms[pos=%lu]", pos);
@@ -311,7 +312,7 @@ uint64_t handle_datacenter_input() {
       end_room = pos;
     }
     pos <<= 1;
-  }
+  } while ((pos <= max_pos) && (pos != 0));
 
   set_flood_fill_threshold();
 
@@ -338,14 +339,14 @@ void print_verbose(char* fmt, ...) {
 
 void print_rooms(uint64_t rooms) {
   uint64_t pos = 1;
-  while (pos <= max_pos) {
+  do {
     print_verbose("%d ", !room_free(pos, rooms));
 
     if (0 != (pos & right_edge)) {
       print_verbose("\n");
     }
     pos <<= 1;
-  }
+  } while ((pos <= max_pos) && (pos != 0));
 }
 
 void print_rooms_setup(uint64_t rooms) {

@@ -22,6 +22,7 @@ For reference, I found it again [here](http://www.businessinsider.com/heres-the-
 | 4.5 | Added some methods to handle input, setup, and debug output.
 | 4.6 | Fixed another performance bug. `try_flood()` no longer returns success when exactly one room is cut off. This does not affect the results, but fixing it gives a huge performance boost.
 | 4.7 | Fixed error message formatting.
+| 4.8 | Bugfix: Now works for 8x8 datacenters.
 
 
 ## How to run
