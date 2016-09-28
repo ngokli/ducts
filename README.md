@@ -21,6 +21,7 @@ For reference, I found it again [here](http://www.businessinsider.com/heres-the-
 | 4.4 | Replaced `call_with_param()` macro with `call_with_params()` macro (takes variable number of parameters).  Just to play with `__VA_ARGS__` in macros `^_^`.  Maybe I will use the added functionality later.
 | 4.5 | Added some methods to handle input, setup, and debug output.
 | 4.6 | Fixed another performance bug. `try_flood()` no longer returns success when exactly one room is cut off. This does not affect the results, but fixing it gives a huge performance boost.
+| 4.7 | Fixed error message formatting.
 
 
 ## How to run

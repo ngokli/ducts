@@ -41,6 +41,7 @@
 // 4.6 Fixed another performance bug. try_flood() no longer returns success
 //       when exactly one room is cut off. This does not affect the results, but
 //       fixing it gives a huge performance boost.
+// 4.7 Fixed error message formatting.
 
 
 #include <stdlib.h>
@@ -294,7 +295,7 @@ uint64_t handle_datacenter_input() {
   while (pos <= max_pos) {
     int val;
     char input_info[32];
-    snprintf(input_info, sizeof(input_info), "rooms[pos=%lu]\n", pos);
+    snprintf(input_info, sizeof(input_info), "rooms[pos=%lu]", pos);
     val = scanf_int_safe(input_info);
     if (val == EMPTY_ROOM_VAL) {
       num_rooms++;
