@@ -38,7 +38,9 @@
 //       variable number of parameters).  Just to play with __VA_ARGS__ in
 //       macros ^_^.  Maybe I will use the added functionality later.
 // 4.5 Added some methods to handle input, setup, and debug output.
-
+// 4.6 Fixed another performance bug. try_flood() no longer returns success
+//       when exactly one room is cut off. This does not affect the results, but
+//       fixing it gives a huge performance boost.
 
 
 #include <stdlib.h>
@@ -108,8 +110,9 @@ uint64_t flood_rooms;
 
 // *** Stats ***
 
-// Number of calls to search()
-uint64_t search_count = 0;
+// Number of calls to search() and flood_fill()
+uint64_t search_count     = 0;
+uint64_t flood_fill_count = 0;
 
 // Number of times flood-filling check allows the search to stop early (or not)
 uint64_t flood_early_stop_count    = 0;
@@ -397,6 +400,8 @@ bool should_flood_fill(int rooms_left) {
 }
 
 void flood_fill(uint64_t pos) {
+  flood_fill_count++;
+
   flood_rooms_left--;
   if (flood_rooms_left == 0) {
     return;
@@ -412,7 +417,11 @@ void flood_fill(uint64_t pos) {
 
 bool try_flood(uint64_t pos, uint64_t rooms, int rooms_left) {
   flood_rooms      = rooms;
-  flood_rooms_left = rooms_left;
+  // flood_rooms_left works a bit differently from rooms_left, because the
+  // count has to be decremented up front.  Could be re-architected, but it
+  // would be too much work for this toy project.
+  flood_rooms_left = rooms_left + 1;
+
   flood_fill(pos);
   return (0 == flood_rooms_left);
 }
@@ -526,6 +535,7 @@ void main(int argc, char *argv[]) {
   print_normal("%d\n", solution_count);
 
   print_verbose("search_count: %lu\n", search_count);
+  print_verbose("flood_fill_count: %lu\n", flood_fill_count);
   print_verbose("flood_early_stop_count: %lu, flood_no_early_stop_count: %lu\n",
                 flood_early_stop_count, flood_no_early_stop_count);
 }
