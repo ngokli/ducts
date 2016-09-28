@@ -4,6 +4,7 @@ This is a record of my attempts at Quora's Datacenter Cooling problem.
 I originally saw the problem on Quora's careers page.
 For reference, I found it again [here](http://www.businessinsider.com/heres-the-test-you-have-to-pass-to-work-at-quora-silicon-valleys-hot-new-86-million-startup-2010-4).
 
+
 ## Version history
 | Ver | Comments
 |----:| :----
@@ -31,31 +32,35 @@ For reference, I found it again [here](http://www.businessinsider.com/heres-the-
 
 `run_perf_test.sh` runs each test case ten times and outputs the average run time (centi-second precision).  Only counts user time, as system time is negligible (on the order of 0.01%).  Test output goes to stdout as well as the `perf_test_output` file.  You can pass a list of test cases if you don't want to run them all: `./run_perf_test.sh test_cases/input1 test_cases/input2`.  The output is ignored (not checking for correctness).
 
+
 ## Performance
 Not including input1, input2, or inputa, because runtimes are always less than 0.00s.
+Not including versions that didn't change performance.
 \* indicates the test was manually run twice and the times were averaged, rather than
 using `run_perf_test.sh` (which runs ten times, which would take forever).
-| Ver | input3 (s) | input4 | input5 | inputb    | Comments                              |
-|----:|-----------:|-------:|-------:|----------:|:--------------------------------------|
-| 1.0 |       0.23 |  25.36 | 149.32 | \*4863.61 | First attempt                         |
-| 2.0 |       0.41 |  44.62 | 264.50 | \*8815.87 | Replace array with 64-bit variable    |
-| 2.1 |       0.39 |  40.34 | 235.78 | \*8137.41 | Performance bug fix                   |
-| 3.0 |       0.16 |  18.72 | 114.33 | \*3952.12 | Replace position with 64-bit variable |
-| 4.0 |       0.05 |   1.90 |   9.77 |     89.28 | Flood-fill check... Bam!              |
+| Ver | input3 (s) | input4 | input5 | inputb    | Comments
+|----:|-----------:|-------:|-------:|----------:|:--------
+| 1.0 |       0.23 |  25.36 | 149.32 | \*4863.61 | First attempt
+| 2.0 |       0.41 |  44.62 | 264.50 | \*8815.87 | Replace array with 64-bit variable
+| 2.1 |       0.39 |  40.34 | 235.78 | \*8137.41 | Performance bug fix
+| 3.0 |       0.16 |  18.72 | 114.33 | \*3952.12 | Replace position with 64-bit variable
+| 4.0 |       0.05 |   1.90 |   9.77 |     89.28 | Flood-fill check... Bam!
+| 4.6 |       0.02 |   0.91 |   3.53 |     33.10 | Fixed flood-fill bug
 
 
 ## Performance test results
 ```
-$ ./run_perf_test.sh 
-Mon Sep 26 15:31:37 PDT 2016
+$ ./run_perf_test.sh test_cases/input?
+Wed Sep 28 13:04:58 PDT 2016
 test_cases/input1 avg time: 0
 test_cases/input2 avg time: 0
-test_cases/input3 avg time: .05
-test_cases/input4 avg time: 1.90
-test_cases/input5 avg time: 9.77
+test_cases/input3 avg time: .02
+test_cases/input4 avg time: .91
+test_cases/input5 avg time: 3.53
 test_cases/inputa avg time: 0
-test_cases/inputb avg time: 89.28
+test_cases/inputb avg time: 33.10
 ```
+
 
 ## Test results
 ```
