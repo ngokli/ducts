@@ -49,7 +49,7 @@ using `run_perf_test.sh` (which runs ten times, which would take forever).
 | 3.0 |       0.16 |  18.72 | 114.33 | \*3952.12 | Replace position with 64-bit variable
 | 4.0 |       0.05 |   1.90 |   9.77 |     89.28 | Flood-fill check... Bam!
 | 4.6 |       0.02 |   0.89 |   3.67 |     32.82 | Fixed flood-fill bug
-
+| 4.9 |       0.02 |   0.69 |   2.82 |     25.75 | Ifdeffed out stats and progress printing
 
 ## Performance test results
 ```
