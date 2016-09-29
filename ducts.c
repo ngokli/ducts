@@ -44,8 +44,9 @@
 // 4.7 Fixed error message formatting.
 // 4.8 Bugfix: Now works for 8x8 datacenters
 // 4.9 Used #ifdef WITH_STATS_AND_PROGRESS to exclude that code unless it is
-//     explicitly desired.  20% to 25% percent performance gain.
-
+//       explicitly desired.  20% to 25% percent performance gain.
+// 5.0 Bugfix: Now correctly handles 64-room inputs. Also fixed scanf error
+//       checking, and added a check for input with more than 64 rooms.
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -281,7 +282,7 @@ void handle_cli_args(int argc, char* argv[]) {
     }
     else {
       print_usage(argv[0]);
-      exit(1);
+      exit(2);
     }
   }
 }
@@ -290,6 +291,11 @@ uint64_t handle_datacenter_input() {
   // Get the width and length first
   width  = scanf_int_safe("width");
   length = scanf_int_safe("length");
+
+  if (64 < width * length) {
+    fputs("Error: width*length greater than 64.\n", stderr);
+    exit(3);
+  }
 
   max_pos = (uint64_t)1 << (width * length - 1);
 
@@ -367,15 +373,19 @@ void print_rooms_setup(uint64_t rooms) {
 int scanf_int_safe(char* error_string) {
   errno = 0;
   int val;
-  if (scanf("%d", &val) <= 0 ) {
+  int scanf_count;
+  scanf_count = scanf("%d", &val);
+  if (scanf_count == 1 ) {
+    return val;
+  }
+
+  if (scanf_count == EOF) {
     fprintf(stderr, "Mismatch when reading %s.\n", error_string);
-    exit(1);
+    exit(4);
   }
-  else if (errno != 0) {
-    fprintf(stderr, "Error reading %s: %s\n", error_string, strerror(errno));
-    exit(errno);
-  }
-  return val;
+
+  fprintf(stderr, "Error reading %s: %s\n", error_string, strerror(errno));
+  exit(errno);
 }
 
 
@@ -517,9 +527,10 @@ void set_edges() {
   // Set left_edge and right_edge
   left_edge  = 0;
   right_edge = 0;
+  uint64_t right_edge_start = (uint64_t)1 << (width - 1);
   for (int i = 0; i < length; i++) {
     left_edge  = (left_edge  << width) + 1;
-    right_edge = (right_edge << width) + (1 << (width - 1));
+    right_edge = (right_edge << width) + right_edge_start;
   }
 
   // Set up_edge and down_edge

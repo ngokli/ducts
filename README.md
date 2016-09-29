@@ -5,6 +5,10 @@ I originally saw the problem on Quora's careers page.
 For reference, I found it again [here](http://www.businessinsider.com/heres-the-test-you-have-to-pass-to-work-at-quora-silicon-valleys-hot-new-86-million-startup-2010-4).
 
 
+## Project Status
+It's time for me to move on.  Working on this has definitely helped me get back into the swing of working with architecting, writing, testing, debugging, etc., after two years away from the industry.  But now I feel like I'm just grinding away at details.  Time to move on to something else!
+
+
 ## Version history
 | Ver | Comments
 |----:| :----
@@ -24,6 +28,8 @@ For reference, I found it again [here](http://www.businessinsider.com/heres-the-
 | 4.7 | Fixed error message formatting.
 | 4.8 | Bugfix: Now works for 8x8 datacenters.
 | 4.9 | Used `#ifdef WITH_STATS_AND_PROGRESS` to exclude that code unless it is explicitly desired.  20% to 25% percent performance gain.
+| 5.0 | Bugfix: Now correctly handles 64-room inputs. Also fixed scanf error checking, and added a check for input with more than 64 rooms.  Added test cases for large inputs.
+
 
 
 ## How to run
@@ -72,8 +78,8 @@ test_cases/inputb avg time: 25.75
 
 ## Test results
 ```
-$ ./run_test.sh
-Wed Sep 28 13:49:02 PDT 2016
+$ ./run_test.sh 
+Wed Sep 28 21:48:52 PDT 2016
 test_cases/input1: PASS!  (result matched expected: 12)
 test_cases/input2: PASS!  (result matched expected: 67)
 test_cases/input3: PASS!  (result matched expected: 375)
@@ -84,6 +90,15 @@ test_cases/input11: PASS!  (result matched expected: 12705)
 test_cases/input12: PASS!  (result matched expected: 63318)
 test_cases/input13: PASS!  (result matched expected: 32735)
 test_cases/input15: PASS!  (result matched expected: 655)
+test_cases/input20: PASS!  (result matched expected: 1)
+test_cases/input21: PASS!  (result matched expected: 1)
+test_cases/input22: PASS!  (result matched expected: 1)
+test_cases/input23: PASS!  (result matched expected: 1)
+test_cases/input24: PASS!  (result matched expected: 0)
+test_cases/input25: PASS!  (result matched expected: 0)
+test_cases/input26: PASS!  (result matched expected: 1)
+test_cases/input27: PASS!  (result matched expected: 1)
+test_cases/input28: PASS!  (result matched expected: 1)
 test_cases/inputa: PASS!  (result matched expected: 2)
 test_cases/inputb: PASS!  (result matched expected: 301716)
 ```
