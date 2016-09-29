@@ -43,6 +43,8 @@
 //       fixing it gives a huge performance boost.
 // 4.7 Fixed error message formatting.
 // 4.8 Bugfix: Now works for 8x8 datacenters
+// 4.9 Used #ifdef WITH_STATS_AND_PROGRESS to exclude that code unless it is
+//     explicitly desired.  20% to 25% percent performance gain.
 
 
 #include <stdlib.h>
@@ -112,14 +114,17 @@ uint64_t flood_rooms;
 
 // *** Stats ***
 
-// Number of calls to search() and flood_fill()
-uint64_t search_count     = 0;
-uint64_t flood_fill_count = 0;
+#ifdef WITH_STATS_AND_PROGRESS
 
-// Number of times flood-filling check allows the search to stop early (or not)
-uint64_t flood_early_stop_count    = 0;
-uint64_t flood_no_early_stop_count = 0;
+  // Number of calls to search() and flood_fill()
+  uint64_t search_count     = 0;
+  uint64_t flood_fill_count = 0;
 
+  // Number of times flood-filling check allows the search to stop early (or not)
+  uint64_t flood_early_stop_count    = 0;
+  uint64_t flood_no_early_stop_count = 0;
+
+#endif
 
 
 
@@ -402,7 +407,9 @@ bool should_flood_fill(int rooms_left) {
 }
 
 void flood_fill(uint64_t pos) {
-  flood_fill_count++;
+  #ifdef WITH_STATS_AND_PROGRESS
+    flood_fill_count++;
+  #endif
 
   flood_rooms_left--;
   if (flood_rooms_left == 0) {
@@ -433,12 +440,14 @@ bool try_flood(uint64_t pos, uint64_t rooms, int rooms_left) {
 // *******  Recursive Path Search  *******
 
 int search(uint64_t pos, uint64_t rooms, int rooms_left) {
-  // Print some dots so we can monitor the speed
-  search_count++;
-  if (0 == (search_count % SEARCHES_PER_DOT)) {
-    print_verbose(".");
-    fflush(NULL);
-  }
+  #ifdef WITH_STATS_AND_PROGRESS
+    // Print some dots so we can monitor the speed
+    search_count++;
+    if (0 == (search_count % SEARCHES_PER_DOT)) {
+      print_verbose(".");
+      fflush(NULL);
+    }
+  #endif
 
   if (room_free(pos, rooms)) {
     if (0 < rooms_left) {
@@ -451,12 +460,16 @@ int search(uint64_t pos, uint64_t rooms, int rooms_left) {
       if (should_flood_fill(rooms_left)) {
         // Try flood-filling (check if the end room is reachable from pos)
         if (!try_flood(pos, rooms, rooms_left)) {
-          flood_early_stop_count++;
+          #ifdef WITH_STATS_AND_PROGRESS
+            flood_early_stop_count++;
+          #endif
           return 0;
         }
-        else {
-          flood_no_early_stop_count++;
-        }
+        #ifdef WITH_STATS_AND_PROGRESS
+          else {
+            flood_no_early_stop_count++;
+          }
+        #endif
       }
 
       // This room is empty and there are rooms left, so continue the search!
@@ -536,8 +549,10 @@ void main(int argc, char *argv[]) {
   print_verbose("\nsolutions: ");
   print_normal("%d\n", solution_count);
 
-  print_verbose("search_count: %lu\n", search_count);
-  print_verbose("flood_fill_count: %lu\n", flood_fill_count);
-  print_verbose("flood_early_stop_count: %lu, flood_no_early_stop_count: %lu\n",
-                flood_early_stop_count, flood_no_early_stop_count);
+  #ifdef WITH_STATS_AND_PROGRESS
+    print_verbose("search_count: %lu\n", search_count);
+    print_verbose("flood_fill_count: %lu\n", flood_fill_count);
+    print_verbose("flood_early_stop_count: %lu, flood_no_early_stop_count: %lu\n",
+                  flood_early_stop_count, flood_no_early_stop_count);
+  #endif
 }

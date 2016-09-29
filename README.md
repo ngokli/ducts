@@ -23,6 +23,7 @@ For reference, I found it again [here](http://www.businessinsider.com/heres-the-
 | 4.6 | Fixed another performance bug. `try_flood()` no longer returns success when exactly one room is cut off. This does not affect the results, but fixing it gives a huge performance boost.
 | 4.7 | Fixed error message formatting.
 | 4.8 | Bugfix: Now works for 8x8 datacenters.
+| 4.9 | Used `#ifdef WITH_STATS_AND_PROGRESS` to exclude that code unless it is explicitly desired.  20% to 25% percent performance gain.
 
 
 ## How to run
@@ -53,19 +54,19 @@ using `run_perf_test.sh` (which runs ten times, which would take forever).
 ## Performance test results
 ```
 $ ./run_perf_test.sh
-Wed Sep 28 13:53:08 PDT 2016
+Wed Sep 28 17:42:43 PDT 2016
 test_cases/input1 avg time: 0
 test_cases/input2 avg time: 0
 test_cases/input3 avg time: .02
-test_cases/input4 avg time: .89
-test_cases/input5 avg time: 3.67
-test_cases/input10 avg time: 2.76
-test_cases/input11 avg time: 1.91
-test_cases/input12 avg time: 4.66
-test_cases/input13 avg time: 5.34
-test_cases/input15 avg time: .71
+test_cases/input4 avg time: .69
+test_cases/input5 avg time: 2.82
+test_cases/input10 avg time: 2.15
+test_cases/input11 avg time: 1.41
+test_cases/input12 avg time: 3.55
+test_cases/input13 avg time: 4.25
+test_cases/input15 avg time: .60
 test_cases/inputa avg time: 0
-test_cases/inputb avg time: 32.82
+test_cases/inputb avg time: 25.75
 ```
 
 
