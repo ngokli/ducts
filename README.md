@@ -9,29 +9,6 @@ For reference, I found it again [here](http://www.businessinsider.com/heres-the-
 It's time for me to move on.  Working on this has definitely helped me get back into the swing of working with architecting, writing, testing, debugging, etc., after two years away from the industry.  But now I feel like I'm just grinding away at details.  Time to move on to something else!
 
 
-## Version history
-| Ver | Comments
-|----:| :----
-| 1.0 | Initial release
-| 1.1 | Added this block of comments
-| 2.0 | Using a 64-bit `uint64_t` instead of an array to store the room structure. This limits `width*length` to 64. Credit for the idea to [Pathikrit Bhowmick](https://github.com/pathikrit/Quora-Challenges/). The original problem description doesn't include any size limits, but I still feel silly for not thinking of this myself.
-| 2.1 | Performance bug fix: No longer continuing to search after reaching the end room.  But it turns out, this is still slower than version 1.  I had thought copying the whole room structure (as a single `uint64_t`) onto the stack when recursing would help avoid data hazards in the processor.  But it seems there are much bigger bottlenecks: possibly the function calls themselves, branching, and multiplication in position calculation.  Will have to give the compiler some more help!  Perhaps handling the search in a loop instead of a recursive function call would help reduce dependencies?  Also, now that the array structure is copied at every search level, the search could easily be given to several threads.
-| 3.0 | 3.0 Replace position struct with a `uint64_t` bitmask into the room structure. Exactly one bit is set in a position bitmask at any time. Finally, something faster than version 1! But only about 25% faster.
-| 3.1 | Simplified search2() with a (kind of complicated) macro. Performance unchanged. This let me play with macros, but it would be interesting to do the same thing with a helper function and some indirection. I wonder how much the compiler could optimize it away.
-| 4.0 | Added periodic checking for empty rooms that are cut off, using a recursive flood-fill algorithm. The flood-fill is *much* less expensive than the path search, so avoiding some large dead-end branches gives a huge performance gain. This is another idea from [Pathikrit Bhowmick](https://github.com/pathikrit/Quora-Challenges/). I added a heuristic based on datacenter size to determine how early to start using these flood-fills.
-| 4.1 | Added forward declarations, moved functions and global variable definitions, and fixed up comments/formatting.  Sorry for the messy diff, but rest assured there are no material changes.
-| 4.2 | Added `scanf_int_safe()`, a scanf wrapper to handle error checking and reporting.
-| 4.3 | Added macros to replace hardcoded values.
-| 4.4 | Replaced `call_with_param()` macro with `call_with_params()` macro (takes variable number of parameters).  Just to play with `__VA_ARGS__` in macros `^_^`.  Maybe I will use the added functionality later.
-| 4.5 | Added some methods to handle input, setup, and debug output.
-| 4.6 | Fixed another performance bug. `try_flood()` no longer returns success when exactly one room is cut off. This does not affect the results, but fixing it gives a huge performance boost.
-| 4.7 | Fixed error message formatting.
-| 4.8 | Bugfix: Now works for 8x8 datacenters.
-| 4.9 | Used `#ifdef WITH_STATS_AND_PROGRESS` to exclude that code unless it is explicitly desired.  20% to 25% percent performance gain.
-| 5.0 | Bugfix: Now correctly handles 64-room inputs. Also fixed scanf error checking, and added a check for input with more than 64 rooms.  Added test cases for large inputs.
-
-
-
 ## How to run
 `compile.sh` compiles with `gcc -O3 -oducts ducts.c`.
 
@@ -58,7 +35,33 @@ using `run_perf_test.sh` (which runs ten times, which would take forever).
 | 4.6 |       0.02 |   0.89 |   3.67 |     32.82 | Fixed flood-fill bug
 | 4.9 |       0.02 |   0.69 |   2.82 |     25.75 | Ifdeffed out stats and progress printing
 
-## Performance test results
+
+## Version history
+| Ver | Comments
+|----:| :----
+| 1.0 | Initial release
+| 1.1 | Added this block of comments
+| 2.0 | Using a 64-bit `uint64_t` instead of an array to store the room structure. This limits `width*length` to 64. Credit for the idea to [Pathikrit Bhowmick](https://github.com/pathikrit/Quora-Challenges/). The original problem description doesn't include any size limits, but I still feel silly for not thinking of this myself.
+| 2.1 | Performance bug fix: No longer continuing to search after reaching the end room.  But it turns out, this is still slower than version 1.  I had thought copying the whole room structure (as a single `uint64_t`) onto the stack when recursing would help avoid data hazards in the processor.  But it seems there are much bigger bottlenecks: possibly the function calls themselves, branching, and multiplication in position calculation.  Will have to give the compiler some more help!  Perhaps handling the search in a loop instead of a recursive function call would help reduce dependencies?  Also, now that the array structure is copied at every search level, the search could easily be given to several threads.
+| 3.0 | 3.0 Replace position struct with a `uint64_t` bitmask into the room structure. Exactly one bit is set in a position bitmask at any time. Finally, something faster than version 1! But only about 25% faster.
+| 3.1 | Simplified search2() with a (kind of complicated) macro. Performance unchanged. This let me play with macros, but it would be interesting to do the same thing with a helper function and some indirection. I wonder how much the compiler could optimize it away.
+| 4.0 | Added periodic checking for empty rooms that are cut off, using a recursive flood-fill algorithm. The flood-fill is *much* less expensive than the path search, so avoiding some large dead-end branches gives a huge performance gain. This is another idea from [Pathikrit Bhowmick](https://github.com/pathikrit/Quora-Challenges/). I added a heuristic based on datacenter size to determine how early to start using these flood-fills.
+| 4.1 | Added forward declarations, moved functions and global variable definitions, and fixed up comments/formatting.  Sorry for the messy diff, but rest assured there are no material changes.
+| 4.2 | Added `scanf_int_safe()`, a scanf wrapper to handle error checking and reporting.
+| 4.3 | Added macros to replace hardcoded values.
+| 4.4 | Replaced `call_with_param()` macro with `call_with_params()` macro (takes variable number of parameters).  Just to play with `__VA_ARGS__` in macros `^_^`.  Maybe I will use the added functionality later.
+| 4.5 | Added some methods to handle input, setup, and debug output.
+| 4.6 | Fixed another performance bug. `try_flood()` no longer returns success when exactly one room is cut off. This does not affect the results, but fixing it gives a huge performance boost.
+| 4.7 | Fixed error message formatting.
+| 4.8 | Bugfix: Now works for 8x8 datacenters.
+| 4.9 | Used `#ifdef WITH_STATS_AND_PROGRESS` to exclude that code unless it is explicitly desired.  20% to 25% percent performance gain.
+| 5.0 | Bugfix: Now correctly handles 64-room inputs. Also fixed scanf error checking, and added a check for input with more than 64 rooms.  Added test cases for large inputs.
+
+
+
+## Tests (current version)
+
+### Performance test results
 ```
 $ ./run_perf_test.sh
 Wed Sep 28 17:42:43 PDT 2016
@@ -76,8 +79,7 @@ test_cases/inputa avg time: 0
 test_cases/inputb avg time: 25.75
 ```
 
-
-## Test results
+### Correctness Test results
 ```
 $ ./run_test.sh 
 Wed Sep 28 21:48:52 PDT 2016
@@ -106,5 +108,4 @@ test_cases/inputb: PASS!  (result matched expected: 301716)
 
 
 ## Disclosure
-I didn't start this repo until I already had six versions of the project.  So I've gone back and cleaned up the first version to put up.  I'm not sure if I'll take the time to clean up the rest, except the last.  I'll do enough to compare speeds, though.  My latest version finishes inputb in a few minutes.
-
+I didn't start this repo until I already had six versions of the project.  I've gone back to clean up each version and commit it, so you (and I) can see the code evolve.  And then I continued to work on the project.
