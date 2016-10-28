@@ -47,6 +47,7 @@ Not including input1, input2, or inputa, because runtimes are always less than 0
 Not including versions that didn't change performance.
 \* indicates the test was manually run twice and the times were averaged, rather than
 using `run_perf_test.sh` (which runs ten times, which would take forever).
+
 | Ver | input3 (s) | input4 | input5 | inputb    | Comments
 |----:|-----------:|-------:|-------:|----------:|:--------
 | 1.0 |       0.23 |  25.36 | 149.32 | \*4863.61 | First attempt
